@@ -1,0 +1,37 @@
+/* JavaFX CSS - Leave this comment until you have at least create one rule which uses -fx-Property */
+
+.root
+{
+	-fx-font-family:"Courier New";
+}
+
+.window
+{
+	-fx-font-family:"Courier New";
+}
+
+.editSettings
+{
+	-fx-pref-width:300px;
+	-fx-pref-height:120px;
+}
+
+.editSettings HBox
+{
+	-fx-padding:5px;
+}
+
+.editSettings Label
+{
+	-fx-pref-width:260px;
+}
+
+.editSettings TextField
+{
+	-fx-pref-width:40px;
+}
+
+.editSettings Button
+{
+	-fx-pref-width:300px;
+}
