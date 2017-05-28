@@ -2,23 +2,34 @@
 
 .root
 {
-	-fx-font-family:"Courier New";
+	-fx-font-family:"Monospace";
+	-fx-background-color:white;
 }
 
 .window
 {
-	-fx-font-family:"Courier New";
+	-fx-font-family:"Monospace";
+	-fx-background-color:white;
 }
+
+/*----------------------edit settings---------------------*/
 
 .editSettings
 {
 	-fx-pref-width:300px;
 	-fx-pref-height:120px;
+	-fx-padding:10px;
 }
 
 .editSettings HBox
 {
 	-fx-padding:5px;
+}
+
+.controlCont
+{
+	-fx-padding:10px 0px 0.0px 0.0px ;
+	-fx-alignment:center;
 }
 
 .editSettings Label
@@ -33,5 +44,151 @@
 
 .editSettings Button
 {
-	-fx-pref-width:300px;
+	-fx-pref-width:100px;
 }
+
+/*-------------------connection settings------------------*/
+
+.connectionSettingsWindow Label
+{
+	-fx-padding:3px;
+	-fx-font-size:14px;
+}
+
+.connectionSettingsWindow VBox
+{
+	-fx-padding:5px;
+	-fx-spacing:5px;
+}
+
+.connectionSettingsWindow HBox
+{
+	-fx-alignment:center;
+	-fx-padding:10px;
+}
+
+.connectionSettingsWindow Button
+{
+	-fx-padding:5px;
+	-fx-pref-width:100px;
+	-fx-max-width:100px;
+	-fx-min-width:100px;
+}
+
+
+/*-----------------------tab panes-----------------------*/
+
+.leftPannel Label
+{
+	-fx-padding:5px 20px 5px 5px;
+}
+
+.leftPannel Label:hover
+{
+	-fx-opacity:0.4;
+	-fx-cursor:hand;
+}
+
+
+.tabName
+{
+	-fx-padding:3px;
+	-fx-font-size:14px;
+}
+
+/*-------------------queries collection------------------*/
+
+/*add collection */
+
+.addCollection
+{
+	-fx-padding:30px;
+	-fx-alignment:top-center;
+	-fx-font-size:14px;
+	-fx-spacing:15px;
+}
+
+.addCollection Label
+{
+	-fx-max-width:400px;
+	-fx-min-width:400px;
+	-fx-pref-width:400px;
+	-fx-padding:5px;
+	-fx-text-alignment:center;
+	-fx-font-size:16px;
+}
+
+.addCollection Button
+{
+	-fx-max-width:200px;
+	-fx-min-width:200px;
+	-fx-pref-width:200px;
+	
+	-fx-padding:5px;
+}
+
+.addCollection TextField
+{
+	-fx-max-width:400px;
+	-fx-min-width:400px;
+	-fx-pref-width:400px;
+	
+	-fx-padding:10px;
+}
+
+.queryTitle
+{
+	-fx-padding:10px;
+	-fx-font-size:16px
+}
+
+.queryTextArea
+{
+	-fx-padding:5px;
+}
+
+/*---------------Authorized Queries Window----------------*/
+
+.AuthorizedQueriesWindow
+{
+	-fx-pref-width: 420px;
+	-fx-padding:10px;
+}
+
+.AuthorizedQueriesWindow CheckBox
+{
+	-fx-pref-width: 100px;
+	-fx-padding:3px;
+}
+
+.AuthorizedQueriesWindow Label
+{
+	-fx-padding:10px 3px 10px 3px;
+}
+
+.AuthorizedQueriesWindow HBox
+{
+	-fx-padding:20px 3px 3px 3px;
+	-fx-alignment:center;
+}
+
+.AuthorizedQueriesWindow Button
+{
+	-fx-pref-width: 100px;
+	-fx-padding:3px;
+}
+
+/*--------------------controls settings-------------------*/
+
+.controls
+{
+	-fx-background-color:white;
+}
+
+.controls Button
+{
+
+}
+
+/*--------------------------------------------------------*/
+
