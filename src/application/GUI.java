@@ -1,11 +1,9 @@
 package application;
 
-
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -14,12 +12,17 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.TableView;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -30,41 +33,72 @@ public class GUI
 	private BorderPane mainPane;
 	private TextArea outputBoxText;
 	private TextArea queueField;
-	private TableView<String> outputBoxTable;
 	
 	private SQLConnection sqlConnection;
-	
-	private int COLUMN_WIDTH = 20;
+	private BaseInfo basesInfo;
+
 	private boolean queueFieldClean;
 	private boolean outFieldClean;
-	private boolean queryTime;
+	private boolean isConnected; 
+	
+	//private int baseType;
 	
 	private MenuBar topMenu;
 	private Button createConnection;
 	private Button clear;
 	private Button closeConnection;
 	private Button sentRequest;
+	private Button additionalQueryBox;
+	private Button addQueryToCollection;
+	
+	// top menu items witch must be disabled or enabled after close/open connection
 	
 	MenuItem openConnection;
 	MenuItem offConnection;
+	MenuItem investigation;
+	
+	//----------------------------------------------------------------------------------
+	
+	QueryList queryList;
+	CollectionGUI collectionGUI;
+
+	//----------------------------------------------------------------------------------
 	
 	GUI(Scene s, BorderPane bp, SQLConnection sqlConnection)
 	{
 		this.mainPane = bp;
-		
+		/*
+		if (System.getProperty("os.name").toLowerCase().contains("windows"))
+		{
+			this.mainPane.setStyle("-fx-font-family:Courier New;");
+		}
+		else if(System.getProperty("os.name").toLowerCase().contains("linux"))
+		{
+			this.mainPane.setStyle("-fx-font-family:Nimbus Mono L;");
+		}
+		*/
 		this.outputBoxText = new TextArea();
 		this.queueField = new TextArea();
+		this.queueField.setWrapText(true);
 		
 		this.outputBoxText.setEditable(false);
-		
-		this.outputBoxTable = new TableView<String>();
-		
+
 		queueField.setFont(Font.font("Courier New"));
 		outputBoxText.setFont(Font.font("Courier New"));
 	
+		//----------------------------
+		// base connection settings
+		
 		queueFieldClean = false;
 		outFieldClean = true;
-		queryTime = true;
+		this.isConnected = false;
+
+		//----------------------------
+
+		queryList = new QueryList();
+		collectionGUI = new CollectionGUI(this);
+
+		//----------------------------
 		
 		VBox topCont = new VBox();		
 		this.topMenu = createMainMenu();
@@ -74,6 +108,7 @@ public class GUI
 		this.mainPane.setCenter(outputBoxText);
 		
 		this.sqlConnection = sqlConnection;
+		basesInfo = new BaseInfo(this.sqlConnection);
 
 		this.getControlButtons();
 		
@@ -81,7 +116,7 @@ public class GUI
 		{
             public void handle(final KeyEvent keyEvent) 
             {
-            	if(keyEvent.isControlDown())
+            	if(keyEvent.isAltDown())
             	{
             		switch(keyEvent.getCode())
             		{
@@ -102,6 +137,32 @@ public class GUI
             				closeSQLConnection();
             				break;
             				
+            			case T:			// open table structure
+            				
+            				if(isConnected)
+            					basesInfo.showBaseInfo();
+            				else
+            					Messages.showInfo("No connection with database");
+            					
+            				break;
+            				
+            			case C:			// open query collection
+            				collectionGUI.show();
+            				break; 		
+            				
+            			case N:			// open new query window
+            				additionalQueryBox();
+            				break;
+            				
+            			case A: 		// add query to collection
+            				
+            				if(!queueField.getText().equals(""))
+            					collectionGUI.addQuery(queueField.getText());
+            				else
+            					Messages.showInfo("Query field is empty");
+            				
+            				break;	
+            				
             			default:
             		}
             	}
@@ -110,7 +171,12 @@ public class GUI
             		switch(keyEvent.getCode())
             		{
 	            		case ENTER:
-	            			sendSQLRequest();
+	            			
+	            			if(isConnected)
+	            				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean);
+            				else
+            					Messages.showInfo("No connection with database");
+	            			
 	            			break;
 	            			
 	            		default:
@@ -119,131 +185,105 @@ public class GUI
             }
         });
 	}
-	
-	private String getBackSpaces(int count)
-	{
-		String s = "";
-		
-		for(int i = 0; i < count; i++)
-		{
-			s += " ";
-		}
-		
-		return s;
-	}
-	
-	private String getDivider(int count)
-	{
-		String s = "";
-		
-		for(int i = 0; i < COLUMN_WIDTH + 2; i++)
-		{
-			s += "-";
-		}
-		
-		String ret = "";
-		
-		for(int i = 0; i < count; i++)
-		{
-			ret += s;
-		}
 
-		return ret;
-	}
-	
 	public void openSQLConnection()
 	{
 		sqlConnection.createConnection();
 		
-		createConnection.setDisable(true);
+		// bottom buttons 
 		
+		createConnection.setDisable(true);
 		clear.setDisable(false);
 		closeConnection.setDisable(false);
 		sentRequest.setDisable(false);
+		additionalQueryBox.setDisable(false);
+		addQueryToCollection.setDisable(false);
+		
+		// top menu items
 		
 		openConnection.setDisable(true);
 		offConnection.setDisable(false);
+		investigation.setDisable(false);
+		
+		this.isConnected = true;
 	}
 	
 	public void closeSQLConnection()
 	{
 		sqlConnection.closeConnection();
 		
-		createConnection.setDisable(false);
+		// bottom buttons
 		
+		createConnection.setDisable(false);
 		clear.setDisable(true);
 		closeConnection.setDisable(true);
 		sentRequest.setDisable(true);
+		additionalQueryBox.setDisable(true);
+		addQueryToCollection.setDisable(true);
+		
+		// top menu items
 		
 		openConnection.setDisable(false);
 		offConnection.setDisable(true);
+		investigation.setDisable(false);
+		
+		this.isConnected = false;
 	}
 	
-	public void sendSQLRequest()
+	public boolean isConnected()
 	{
-		if(!queueField.getText().equals(""))
+		return this.isConnected;
+	}
+	
+	public void sendSQLRequest(TextArea queueField, TextArea outputBoxText, boolean outFieldClean, boolean queueFieldClean)
+	{
+		String q = queueField.getText();
+
+		if(!q.equals(""))
 		{
-			long beforeRequest = System.currentTimeMillis();
-			ResultSet rs = sqlConnection.queue(queueField.getText());
-			long afterRequest = System.currentTimeMillis();
-			
 			if(outFieldClean)
 				outputBoxText.clear();
 			
-			if(queryTime)
+			for (String send : q.split(";")) 
 			{
-				outputBoxText.setText(outputBoxText.getText() + "\nRequest execution time : " 
-						+ ((afterRequest - beforeRequest) / 1000.0) + " s\n\n");
-			}
+	            send = send.trim();
+	            
+	            QueryGroup currentRequestGroup = queryList.getQueryGroup(send);
+	            
+	            if(currentRequestGroup.equals(QueryGroup.SELECT_GROUP))
+	            {
+	            	System.out.println("select group " + send);
+	            	outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            }
+	            else if(currentRequestGroup.equals(QueryGroup.UPDATE_GROUP))
+	            {
+	            	System.out.println("update group " + send);
+	            	this.update(send);
+	            }
+	            else if(currentRequestGroup.equals(QueryGroup.NOT_AUTORIZED))
+	            {
+	            	String message = "This type of the request not autorized : \n" + send;
+	            	Messages.showInfo(message);
+	            }
+	            else if(currentRequestGroup.equals(QueryGroup.CUSTOM_SELECT_GROUP))
+	            {
+	            	send = send.substring(QueryType.SEL.getName().length(), send.length());
+	            	outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            }
+	            else if(currentRequestGroup.equals(QueryGroup.CUSTOM_UPDATE_GROUP))
+	            {
+	            	send = send.substring(QueryType.UPD.getName().length(), send.length());
+	            	this.update(send);
+	            }
+	            else 
+	            {
+	            	String message = "Unknown type of the request : \n" + send;
+	            	Messages.showInfo(message);
+	            }
+	        }
 
-			try 
-			{
-				String text = "";
-				
-				ResultSetMetaData metaData = rs.getMetaData();
-				int count = metaData.getColumnCount();
-				
-				text += '\n';
-				
-				for(int i = 1; i <= count; i++)
-				{
-					text += (metaData.getColumnLabel(i).length() < COLUMN_WIDTH 
-							? metaData.getColumnLabel(i) + getBackSpaces(COLUMN_WIDTH - metaData.getColumnLabel(i).length()) 
-								: metaData.getColumnLabel(i).substring(0, COLUMN_WIDTH)) + " |";
-				}
-
-				text += '\n';
-				text += getDivider(rs.getMetaData().getColumnCount());
-				text += '\n';
-				
-				outputBoxText.setText(outputBoxText.getText() + text);
-			
-				while (rs.next())
-				{
-					text = "";
-					
-					for(int i = 0; i < rs.getMetaData().getColumnCount(); i++)
-					{
-						text += (rs.getString(i + 1).length() < COLUMN_WIDTH 
-								? rs.getString(i + 1) + getBackSpaces(COLUMN_WIDTH - rs.getString(i + 1).length()) 
-									: rs.getString(i + 1).substring(0, COLUMN_WIDTH)) + " |";
-					}
-
-					text += '\n';
-					text += getDivider(rs.getMetaData().getColumnCount());
-					text += '\n';
-					
-				    outputBoxText.setText(outputBoxText.getText() + text);
-				    
-				    if(queueFieldClean)
-				    	queueField.clear();
-				}
-			} 
-			catch (SQLException e) 
-			{
-				e.printStackTrace();
-				Messages.showError(e.getMessage());
-			}
+			 if(queueFieldClean)
+			    	queueField.clear();
 		}
 		else
 		{
@@ -251,6 +291,27 @@ public class GUI
 		}
 	}
 	
+	private void update(String q)
+	{
+		long beforeRequest = System.currentTimeMillis();
+		int result = sqlConnection.update(q);
+		long afterRequest = System.currentTimeMillis();
+		
+		if(sqlConnection.getQueueTime())
+		{
+			outputBoxText.setText(outputBoxText.getText() + "\nRequest execution time : " 
+					+ ((afterRequest - beforeRequest) / 1000.0) + " s\n\n");
+		}
+		
+		String text = "";
+		text += '\n';
+		text += result + " records was updated";
+		text += '\n';
+		
+	    outputBoxText.setText(outputBoxText.getText() + text);
+		
+	}
+
 	public MenuBar createMainMenu()
 	{
 		topMenu = new MenuBar();
@@ -294,6 +355,7 @@ public class GUI
 		Menu edit = new Menu("Edit");
 		MenuItem cleanQueueField = new MenuItem("Clean queue field");
 		MenuItem cleanOutField = new MenuItem("Clean out filed");
+		MenuItem authorizedQueries = new MenuItem("Authorized queries");
 		MenuItem editSettings = new MenuItem("Settings");
 		
 		cleanQueueField.setOnAction(new EventHandler<ActionEvent>() 
@@ -312,6 +374,14 @@ public class GUI
             }
         });    
 		
+		authorizedQueries.setOnAction(new EventHandler<ActionEvent>() 
+		{
+            public void handle(ActionEvent t) 
+            {
+            	openAuthorizedQueriesWindow();
+            }
+        });    
+		
 		editSettings.setOnAction(new EventHandler<ActionEvent>() 
 		{
             public void handle(ActionEvent t) 
@@ -319,53 +389,169 @@ public class GUI
             	openEditSettingsWindow();
             }
         });    
+		
+		edit.getItems().addAll(cleanQueueField, cleanOutField, authorizedQueries, editSettings);
 
 		//--------------------------------------------
 		
 		Menu about = new Menu("About");
 		MenuItem functionKeys = new MenuItem("Function keys");
-		MenuItem urlRule = new MenuItem("URL rules");
+		MenuItem notStandardQuery = new MenuItem("Not standard queries");
 		
 		functionKeys.setOnAction(new EventHandler<ActionEvent>() 
 		{
             public void handle(ActionEvent t) 
             {
-            	String s = "CTRL + O - start SQL connection \n"
-            			+ "CTRL + Q - end SQL connection \n"
-            			+ "CTRL + D - delete text \n\n"
-            			+ "SHIFT + ENTER - send request";
+            	String s = "ALT + O - Open SQL connection \n"
+            			+ "ALT + Q - End SQL connection \n"
+						+ "ALT + T - Open table structure window \n"
+            			+ "ALT + C - Open queries collection window \n"
+						+ "ALT + N - Open additional query window \n"
+						+ "ALT + A - Add query to collection \n"
+            			+ "ALT + D - Delete text \n\n"
+            			
+            			+ "SHIFT + ENTER - Dend request \n\n"
+            			
+            			+ "In Queries collection window : \n\n"
+            			+ "CTRL + L - Load collection \n"
+            			+ "CTRL + S - Save collection \n";
             	
             	Messages.showInfo(s);
             }
         });   
 		
-		urlRule.setOnAction(new EventHandler<ActionEvent>() 
+		notStandardQuery.setOnAction(new EventHandler<ActionEvent>() 
 		{
             public void handle(ActionEvent t) 
             {
-            	String s = "For connection to MySQL server \n"
-            			+ "\t jdbc:mysql://<base_address> \n\n"
-            			+ "For connection to Microsoft SQL Server \n" 
-            			+ "\t jdbc:sqlserver://<base_address> \n";
+            	String s = "Info will be addes soon...";
             	
             	Messages.showInfo(s);
             }
         });   
 		
-		about.getItems().addAll(functionKeys, urlRule);
+		about.getItems().addAll(functionKeys, notStandardQuery);
 		
 		//--------------------------------------------
 		
-		edit.getItems().addAll(cleanQueueField, cleanOutField, editSettings);
+		Menu tools = new Menu("Tools");
+		investigation = new MenuItem("Tables structure");
+		investigation.setDisable(true);
 		
-		topMenu.getMenus().addAll(connection, edit, about);
+		MenuItem queryCollection = new MenuItem("Queries collection");
+		
+		investigation.setOnAction(new EventHandler<ActionEvent>() 
+		{
+            public void handle(ActionEvent t) 
+            {
+            	basesInfo.showBaseInfo();
+            }
+        });   
+		
+		queryCollection.setOnAction(new EventHandler<ActionEvent>() 
+		{
+            public void handle(ActionEvent t) 
+            {
+            	collectionGUI.show();
+            }
+        });  
+		
+		tools.getItems().addAll(investigation, queryCollection);
+		
+		//--------------------------------------------
+
+		topMenu.getMenus().addAll(connection, edit, tools, about);
 	
 		return topMenu;
 	}
 
+	private void openAuthorizedQueriesWindow()
+	{
+		Stage settingsWindow = new Stage();
+		settingsWindow.setTitle("Authorized queries");
+		settingsWindow.setResizable(false);
+		settingsWindow.getIcons().add(new Image(Records.IMG_MAIN_ICON));
+		
+		BorderPane root = new BorderPane();
+		Scene scene = new Scene(root);
+		
+		scene.getStylesheets().add("application/application.css");
+		
+		//----------------------------------------------------
+
+		Label standardQueryLabel = new Label("Select allowed queries");
+		
+		FlowPane standardQueryBox = new FlowPane();
+		FlowPane customQueryBox = new FlowPane();
+
+		for(QueriesListItem qli : queryList.getQueriesList())
+		{
+			CheckBox cb = new CheckBox(qli.getName());
+			cb.setSelected(qli.getGrant());
+			
+			if(qli.isStandard())
+				standardQueryBox.getChildren().add(cb);
+			else
+				customQueryBox.getChildren().add(cb);
+
+			
+		}
+		
+		//----------------------------------------------------
+		
+		Label notStandardQueryLabel = new Label("Select not standart allowed queries");
+
+		//----------------------------------------------------
+		
+		HBox controlCont = new HBox();
+		
+		Button apply = new Button("Apply");
+		
+		apply.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				ObservableList<Node> nodes = standardQueryBox.getChildren();
+				nodes.addAll(customQueryBox.getChildren());
+				
+				for(Node n : nodes)
+				{
+					CheckBox cb = (CheckBox)n;
+
+					queryList.setGrant(cb.getText(), cb.isSelected());
+				}
+
+				settingsWindow.close();
+			}
+		});
+		
+		controlCont.getChildren().add(apply);
+		
+		//----------------------------------------------------
+		
+		VBox mainCont = new VBox();
+		mainCont.getStyleClass().add("AuthorizedQueriesWindow");
+		mainCont.getChildren().addAll(standardQueryLabel, standardQueryBox, 
+				notStandardQueryLabel, customQueryBox, controlCont);
+
+		//----------------------------------------------------
+		
+		
+		//----------------------------------------------------
+
+		root.setCenter(mainCont);
+		settingsWindow.setScene(scene);
+		settingsWindow.show();
+	}
+
 	private void openEditSettingsWindow()
 	{
-		Stage settingsWindwo = new Stage();
+		Stage settingsWindow = new Stage();
+		settingsWindow.setResizable(false);
+		settingsWindow.setTitle("Output settings");
+		settingsWindow.getIcons().add(new Image(Records.IMG_MAIN_ICON));
+		
 		BorderPane root = new BorderPane();
 		Scene scene = new Scene(root);
 		
@@ -378,7 +564,7 @@ public class GUI
 		
 		Label lWidth = new Label("Field width");
 		TextField tfWidth = new TextField();
-		tfWidth.setText(String.valueOf(this.COLUMN_WIDTH));
+		tfWidth.setText(String.valueOf(this.sqlConnection.getColumnWidth()));
 		
 		widthCont.getChildren().addAll(lWidth, tfWidth);
 		
@@ -402,11 +588,12 @@ public class GUI
 		
 		Label lQueryTime = new Label("Show query time");
 		CheckBox cbQueryTime = new CheckBox();
-		cbQueryTime.setSelected(this.queryTime);
+		cbQueryTime.setSelected(this.sqlConnection.getQueueTime());
 		
 		queryTimeCont.getChildren().addAll(lQueryTime, cbQueryTime);
 
 		HBox applyCont = new HBox();
+		applyCont.getStyleClass().add("controlCont");
 		Button apply = new Button("Apply");
 		
 		apply.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
@@ -417,12 +604,12 @@ public class GUI
 				tfWidth.getText();
 				try
 				{
-					COLUMN_WIDTH = Integer.parseInt(tfWidth.getText());
+					sqlConnection.setColumnWidth(Integer.parseInt(tfWidth.getText()));
 					queueFieldClean = cbCleanQuery.isSelected();
 					outFieldClean = cbCleanOut.isSelected();
-					queryTime = cbQueryTime.isSelected();
+					sqlConnection.setQueueTime(cbQueryTime.isSelected());
 					
-					settingsWindwo.close();
+					settingsWindow.close();
 				}
 				catch(NumberFormatException e)
 				{
@@ -439,27 +626,70 @@ public class GUI
 		//----------------------------------------------------
 		
 		root.setCenter(settingsCont);
-		settingsWindwo.setScene(scene);
-		settingsWindwo.show();
+		settingsWindow.setScene(scene);
+		settingsWindow.show();
 	}
 	
 	private void openConnectionSettingsWindwo()
 	{
-		Stage settingsWindwo = new Stage();
-		BorderPane root = new BorderPane();
-		Scene scene = new Scene(root,250,200);
+		Stage settingsWindow = new Stage();
+		settingsWindow.setResizable(false);
+		settingsWindow.getIcons().add(new Image(Records.IMG_MAIN_ICON));
+		settingsWindow.setTitle("Connection settings");
 		
-		VBox cont = new VBox();
+		BorderPane root = new BorderPane();
+		Scene scene = new Scene(root,480,250);
+		scene.getStylesheets().add("application/application.css");
+		root.getStyleClass().add("connectionSettingsWindow");
+		//----------------------
+		// Base type choice
+		
+		VBox choiceBaseCont = new VBox();
+		
+		final ToggleGroup group = new ToggleGroup();
+
+		RadioButton mySQL = new RadioButton();
+		mySQL.setToggleGroup(group);
+		mySQL.setGraphic(new ImageView(Records.IMG_MYSQL_ICON));
+
+		RadioButton msSQL = new RadioButton();
+		msSQL.setToggleGroup(group);
+		msSQL.setGraphic(new ImageView(Records.IMG_MSSQL_ICON));
+		
+		if(sqlConnection.getBaseType() == sqlConnection.MYSQL)
+			mySQL.setSelected(true);
+		else if(sqlConnection.getBaseType() == sqlConnection.MSSQLSERVER)
+			msSQL.setSelected(true);
+		else
+		{
+			sqlConnection.setBaseType(sqlConnection.MYSQL);
+			mySQL.setSelected(true);
+		}
+	
+		
+		choiceBaseCont.getChildren().addAll(mySQL, msSQL);
+		
+		//----------------------
+		// connection settings
 		
 		Label lConnectionURL = new Label("Base address : ");
 		TextArea taConnectionURL = new TextArea(this.sqlConnection.getURL());
+		taConnectionURL.setWrapText(true);
+		
+		//----------------------
 		
 		Label lUser = new Label("User : ");
 		TextField eUser = new TextField(this.sqlConnection.getUser());
-
-		Label lPassword = new Label("Password");
+		
+		//----------------------
+		
+		Label lPassword = new Label("Password : ");
 		PasswordField pfPassword = new PasswordField();
 		pfPassword.setText(this.sqlConnection.getPassword());
+		
+		//----------------------
+		
+		HBox controlCont = new HBox();
 		
 		Button applySettins = new Button("Apply");
 		
@@ -472,27 +702,56 @@ public class GUI
 				sqlConnection.setUser(eUser.getText());
 				sqlConnection.setPassword(pfPassword.getText());
 				
-				settingsWindwo.close();
+				if(mySQL.isSelected())
+					sqlConnection.setBaseType(sqlConnection.MYSQL);
+				else if(msSQL.isSelected())
+					sqlConnection.setBaseType(sqlConnection.MSSQLSERVER);
+				
+				settingsWindow.close();
 			}
-			
 		});
 		
-		cont.getChildren().addAll(lConnectionURL, taConnectionURL, lUser, eUser, lPassword, pfPassword, applySettins);
+		controlCont.getChildren().add(applySettins);
 		
-		root.setCenter(cont);
+		//----------------------
 		
-		settingsWindwo.setScene(scene);
-		settingsWindwo.show();
+		VBox baseSettingsCont = new VBox();
+		baseSettingsCont.getChildren().addAll(lConnectionURL, taConnectionURL, lUser, eUser, lPassword, pfPassword, controlCont);
+		
+		root.setLeft(choiceBaseCont);
+		root.setRight(baseSettingsCont);
+		
+		settingsWindow.setScene(scene);
+		settingsWindow.show();
 	}
 
 	private void getControlButtons()
 	{
 		HBox controlCont = new HBox();
 		
-		createConnection = new Button("Create connection");
-		closeConnection = new Button("Close connection");
-		sentRequest = new Button("Sent request");
-		clear = new Button("Clear");
+		createConnection = new Button();
+		createConnection.setGraphic(new ImageView(Records.IMG_CREATE_CONNECTION));
+		createConnection.setTooltip(new Tooltip(Records.TOOLTIP_CREATE_CONNECTION));
+		
+		closeConnection = new Button();
+		closeConnection.setGraphic(new ImageView(Records.IMG_CLOSE_CONNECTION));
+		closeConnection.setTooltip(new Tooltip(Records.TOOLTIP_CLOSE_CONNECTION));
+		
+		sentRequest = new Button();
+		sentRequest.setGraphic(new ImageView(Records.IMG_SEND_QUERY));
+		sentRequest.setTooltip(new Tooltip(Records.TOOLTIP_SEND_QUERY));
+		
+		clear = new Button();
+		clear.setGraphic(new ImageView(Records.IMG_CLEAR_BOXES));
+		clear.setTooltip(new Tooltip(Records.TOOLTIP_CLEAR_BOXES));
+		
+		additionalQueryBox = new Button();
+		additionalQueryBox.setGraphic(new ImageView(Records.IMG_ADDITIONAL_QUERY_WINDOW));
+		additionalQueryBox.setTooltip(new Tooltip(Records.TOOLTIP_ADDITIONAL_QUERY_WINDOW));
+		
+		addQueryToCollection = new Button();
+		addQueryToCollection.setGraphic(new ImageView(Records.IMG_ADD_TO_COLLECTION));
+		addQueryToCollection.setTooltip(new Tooltip(Records.TOOLTIP_ADD_TO_COLLECTION));
 	
 		createConnection.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
 		{
@@ -530,11 +789,228 @@ public class GUI
 			@Override
 			public void handle(MouseEvent arg0) 
 			{
-				sendSQLRequest();
+				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean);
 			}
 		});
 		
-		controlCont.getChildren().addAll(createConnection, sentRequest, clear, closeConnection);
+		additionalQueryBox.setDisable(true);
+		additionalQueryBox.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				additionalQueryBox();
+			}
+		});
+		
+		addQueryToCollection.setDisable(true);
+		addQueryToCollection.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				if(!queueField.getText().equals(""))
+					collectionGUI.addQuery(queueField.getText());
+				else
+					Messages.showInfo("Query field is empty");
+			}
+		});
+		
+		controlCont.getChildren().addAll(createConnection, closeConnection, sentRequest, addQueryToCollection,
+				clear, additionalQueryBox);
+		
 		this.mainPane.setBottom(controlCont);
+	}
+	
+	public void additionalQueryBox()
+	{
+		Stage settingsWindow = new Stage();	
+		settingsWindow.setTitle("");
+		settingsWindow.getIcons().add(new Image(Records.IMG_MAIN_ICON));
+		settingsWindow.initOwner(this.mainPane.getScene().getWindow());
+		
+		BorderPane root = new BorderPane();
+		Scene scene = new Scene(root);
+		scene.getStylesheets().add("application/application.css");
+		
+		//------------------------------------------------------
+		
+		TextArea additionalQueryField = new TextArea();
+		additionalQueryField.setWrapText(true);
+		
+		//------------------------------------------------------
+		
+		VBox controlsCont = new VBox();
+		controlsCont.getStyleClass().add("controls");
+		
+		//-------------------------
+		
+		Button send = new Button();
+		send.setGraphic(new ImageView(Records.IMG_SEND_QUERY));
+		send.setTooltip(new Tooltip(Records.TOOLTIP_SEND_QUERY));
+
+		send.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean);
+			}
+		});
+
+		//-------------------------
+		
+		Button toCollection = new Button();
+		toCollection.setGraphic(new ImageView(Records.IMG_ADD_TO_COLLECTION));
+		toCollection.setTooltip(new Tooltip(Records.TOOLTIP_ADD_TO_COLLECTION));
+		
+		toCollection.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			
+			
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				if(!additionalQueryField.getText().equals(""))
+				{
+					collectionGUI.addQuery(additionalQueryField.getText());
+				}
+				else
+					Messages.showInfo("Query field is empty");
+			}
+		});
+		
+		//-------------------------
+		
+		Button toMainBox = new Button();
+		toMainBox.setGraphic(new ImageView(Records.IMG_MOVE_QUERY_TO_MAIN_BOX));
+		toMainBox.setTooltip(new Tooltip(Records.TOOLTIP_MOVE_QUERY_TO_MAIN_BOX));
+		
+		toMainBox.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				queryToMainBox(additionalQueryField.getText());
+			}
+		});
+		
+		//-------------------------
+		
+		Button clear = new Button();
+		clear.setGraphic(new ImageView(Records.IMG_CLEAR_BOXES));
+		clear.setTooltip(new Tooltip(Records.TOOLTIP_CLEAR_BOXES));
+		
+		clear.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				additionalQueryField.clear();
+			}
+		});
+		
+		controlsCont.getChildren().addAll(send, toMainBox, toCollection, clear);
+		
+		//------------------------------------------------------
+
+		root.setOnKeyPressed(new EventHandler<KeyEvent>() 
+		{
+            public void handle(final KeyEvent keyEvent) 
+            {
+            	if(keyEvent.isAltDown())
+            	{
+            		switch(keyEvent.getCode())
+            		{
+            			case D:			// delete data from queue and out boxes
+            				
+            				if(additionalQueryField.getText().equals(""))
+            					outputBoxText.setText("");
+            				else
+            					additionalQueryField.setText("");
+            				
+            				break;
+	
+            			case T:			// open table structure
+            				
+            				if(isConnected)
+            					basesInfo.showBaseInfo();
+            				else
+            					Messages.showInfo("No connection with database");
+            					
+            				break;
+            				
+            			case C:			// open query collection
+            				collectionGUI.show();
+            				break; 		
+            				
+            			case N:			// open new query window
+            				
+            				additionalQueryBox();
+            				
+            				break;
+            				
+            			case A: 		// add query to collection
+            				
+            				if(!additionalQueryField.getText().equals(""))
+            					collectionGUI.addQuery(additionalQueryField.getText());
+            				else
+            					Messages.showInfo("Query field is empty");
+            				
+            				break;	
+            				
+            			default:
+            				
+            		}
+            	}
+            	else if(keyEvent.isShiftDown())
+            	{
+            		switch(keyEvent.getCode())
+            		{
+	            		case ENTER:
+
+	            			if(isConnected)
+	            				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean);
+            				else
+            					Messages.showInfo("No connection with database");
+            					
+            				
+	            			break;
+	            			
+	            		default:
+            		}
+            	}
+            }
+        });
+		
+		//------------------------------------------------------
+
+		root.setCenter(additionalQueryField);
+		root.setLeft(controlsCont);
+		
+		settingsWindow.setScene(scene);
+		settingsWindow.show();
+	}
+
+	public void exit()
+	{
+		if(!this.collectionGUI.isSaved())
+		{
+			if(Messages.showAndWaitChoice("Queries collection not saved. Do you want to save it ?", "Yes", "No"	))
+			{
+				this.collectionGUI.save();
+			}
+		}
+		
+		this.collectionGUI.exit();
+		this.basesInfo.exit();
+	}
+
+	public void queryToMainBox(String query)
+	{
+		this.queueField.setText(query);
+		
+		Stage s = (Stage)this.mainPane.getScene().getWindow();
+		s.toFront();
 	}
 }
