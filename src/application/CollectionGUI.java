@@ -104,7 +104,6 @@ public class CollectionGUI
             	}
             }
 		});
-		
 	}
 	
 	public void create()
@@ -208,7 +207,7 @@ public class CollectionGUI
 		} 
 	    catch (FileNotFoundException e) 
 		{
-	    	System.out.println("Error : Файл с сохранёнными заданиями не найден, возможно это первый запуск");
+	    	System.out.println("Error : пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ");
 		}
 	    catch (TransformerException e) 
 	    {
@@ -482,8 +481,7 @@ public class CollectionGUI
 		collectionTab.getStyleClass().add("tabName");
 		
 		collectionTab.setText(c.getName());
-		//collectionTab.setClosable(false);
-		
+
 		collectionTab.setOnCloseRequest(new EventHandler<Event>()
 		{
 		    @Override
@@ -532,7 +530,6 @@ public class CollectionGUI
 				public void handle(MouseEvent e) 
 				{
 					queryInfo(rightPane, l, item, c);
-					//queryInfo.setText( " \n" + c.getName() + " -> " + item.getName() + "\n");
 				}
 			});
 			
@@ -604,7 +601,6 @@ public class CollectionGUI
 		TextInputDialog dialog = new TextInputDialog();
 		dialog.setTitle(title);
 		dialog.setHeaderText(infoRequest);
-		//dialog.setContentText("Please enter your name:");
 		
 		Optional<String> result = dialog.showAndWait();
 		

@@ -23,7 +23,6 @@ public class BaseInfo
 	int baseType;
 	Stage window;
 
-	
 	BaseInfo(SQLConnection sql)
 	{
 		this.sql = sql;
@@ -97,8 +96,7 @@ public class BaseInfo
 			for(String s : tables)
 			{
 				Label l = new Label(s);
-				//l.getStyleClass().add("tableName");
-				
+
 				l.setOnMouseClicked(new EventHandler<MouseEvent>() 
 				{
 					@Override
