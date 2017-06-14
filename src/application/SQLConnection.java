@@ -129,7 +129,7 @@ public class SQLConnection
 		this.password = password;
 	}
 	
-	public void createConnection()
+	public boolean createConnection()
 	{
 		try 
 		{
@@ -149,15 +149,15 @@ public class SQLConnection
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			con = DriverManager.getConnection(url, user, password);
 			stmt = con.createStatement();
+			
+			return true;
 		} 
 		catch (ClassNotFoundException e) 
 		{
-			e.printStackTrace();
 			Messages.showError(e.getMessage());
 		} 
 		catch (SQLException e) 
 		{
-			e.printStackTrace();
 			Messages.showError(e.getMessage());
 		}
 		catch(Exception e)
@@ -165,6 +165,8 @@ public class SQLConnection
 			// unknown exception
 			Messages.showError(e.getMessage());
 		}
+		
+		return false;
 	}
 	
 	public ResultSet select(String queue)

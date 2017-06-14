@@ -67,16 +67,7 @@ public class GUI
 	GUI(Scene s, BorderPane bp, SQLConnection sqlConnection)
 	{
 		this.mainPane = bp;
-		/*
-		if (System.getProperty("os.name").toLowerCase().contains("windows"))
-		{
-			this.mainPane.setStyle("-fx-font-family:Courier New;");
-		}
-		else if(System.getProperty("os.name").toLowerCase().contains("linux"))
-		{
-			this.mainPane.setStyle("-fx-font-family:Nimbus Mono L;");
-		}
-		*/
+
 		this.outputBoxText = new TextArea();
 		this.queueField = new TextArea();
 		this.queueField.setWrapText(true);
@@ -188,24 +179,25 @@ public class GUI
 
 	public void openSQLConnection()
 	{
-		sqlConnection.createConnection();
-		
-		// bottom buttons 
-		
-		createConnection.setDisable(true);
-		clear.setDisable(false);
-		closeConnection.setDisable(false);
-		sentRequest.setDisable(false);
-		additionalQueryBox.setDisable(false);
-		addQueryToCollection.setDisable(false);
-		
-		// top menu items
-		
-		openConnection.setDisable(true);
-		offConnection.setDisable(false);
-		investigation.setDisable(false);
-		
-		this.isConnected = true;
+		if(sqlConnection.createConnection())
+		{
+			// bottom buttons 
+			
+			createConnection.setDisable(true);
+			clear.setDisable(false);
+			closeConnection.setDisable(false);
+			sentRequest.setDisable(false);
+			additionalQueryBox.setDisable(false);
+			addQueryToCollection.setDisable(false);
+			
+			// top menu items
+			
+			openConnection.setDisable(true);
+			offConnection.setDisable(false);
+			investigation.setDisable(false);
+			
+			this.isConnected = true;
+		}
 	}
 	
 	public void closeSQLConnection()
