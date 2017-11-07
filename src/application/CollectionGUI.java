@@ -665,7 +665,22 @@ public class CollectionGUI
 			@Override
 			public void handle(MouseEvent arg0) 
 			{
-				openOutWindow(query);
+				openOutWindow(query, false);
+			}
+		});
+		
+		//------------------------
+		
+		Button sentToExcel = new Button();
+		sentToExcel.setGraphic(new ImageView(Records.IMG_EXPORT_TO_EXCEL));
+		sentToExcel.setTooltip(new Tooltip(Records.TOOLTIP_EXPORT_TO_EXCEL));
+		
+		sentToExcel.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				openOutWindow(query, true);
 			}
 		});
 		
@@ -711,7 +726,7 @@ public class CollectionGUI
 		
 		//------------------------
 		
-		controls.getChildren().addAll(save, send, toMainBox, delete);
+		controls.getChildren().addAll(save, send, sentToExcel, toMainBox, delete);
 		
 		//----------------------------------------
 		
@@ -930,7 +945,7 @@ public class CollectionGUI
 			this.saved = false;
 	}
 
-	private void openOutWindow(TextArea queryBox)
+	private void openOutWindow(TextArea queryBox, boolean toExcel)
 	{
 		if(this.mainGUI.isConnected())
 		{
@@ -947,15 +962,15 @@ public class CollectionGUI
 				this.outWindow.setScene(scene);
 				this.outWindow.show();
 				
-				this.mainGUI.sendSQLRequest(queryBox, outBox, false, false);	
+				this.mainGUI.sendSQLRequest(queryBox, outBox, false, false, toExcel);	
 			}
 			else
 			{
 				outBox.clear();
-				this.mainGUI.sendSQLRequest(queryBox, outBox, false, false);
-				
-				this.outWindow.toFront();
+				this.mainGUI.sendSQLRequest(queryBox, outBox, false, false, toExcel);
 			}
+			
+			this.outWindow.toFront();
 		}
 		else
 		{

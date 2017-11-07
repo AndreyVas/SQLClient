@@ -26,10 +26,12 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class GUI 
 {
+	private Stage stage;
 	private BorderPane mainPane;
 	private TextArea outputBoxText;
 	private TextArea queueField;
@@ -50,6 +52,7 @@ public class GUI
 	private Button sentRequest;
 	private Button additionalQueryBox;
 	private Button addQueryToCollection;
+	private Button sentToExcel;
 	
 	// top menu items witch must be disabled or enabled after close/open connection
 	
@@ -64,8 +67,9 @@ public class GUI
 
 	//----------------------------------------------------------------------------------
 	
-	GUI(Scene s, BorderPane bp, SQLConnection sqlConnection)
+	GUI(Stage stage, BorderPane bp, SQLConnection sqlConnection)
 	{
+		this.stage = stage;
 		this.mainPane = bp;
 
 		this.outputBoxText = new TextArea();
@@ -84,6 +88,9 @@ public class GUI
 		outFieldClean = true;
 		this.isConnected = false;
 
+		//----------------------------
+		
+		
 		//----------------------------
 
 		queryList = new QueryList();
@@ -164,7 +171,7 @@ public class GUI
 	            		case ENTER:
 	            			
 	            			if(isConnected)
-	            				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean);
+	            				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean, false);
             				else
             					Messages.showInfo("No connection with database");
 	            			
@@ -189,13 +196,14 @@ public class GUI
 			sentRequest.setDisable(false);
 			additionalQueryBox.setDisable(false);
 			addQueryToCollection.setDisable(false);
+			sentToExcel.setDisable(false);
 			
 			// top menu items
 			
 			openConnection.setDisable(true);
 			offConnection.setDisable(false);
 			investigation.setDisable(false);
-			
+
 			this.isConnected = true;
 		}
 	}
@@ -212,6 +220,7 @@ public class GUI
 		sentRequest.setDisable(true);
 		additionalQueryBox.setDisable(true);
 		addQueryToCollection.setDisable(true);
+		sentToExcel.setDisable(true);
 		
 		// top menu items
 		
@@ -227,7 +236,8 @@ public class GUI
 		return this.isConnected;
 	}
 	
-	public void sendSQLRequest(TextArea queueField, TextArea outputBoxText, boolean outFieldClean, boolean queueFieldClean)
+	public void sendSQLRequest(TextArea queueField, TextArea outputBoxText, 
+			boolean outFieldClean, boolean queueFieldClean, boolean toExcel)
 	{
 		String q = queueField.getText();
 
@@ -244,28 +254,50 @@ public class GUI
 	            
 	            if(currentRequestGroup.equals(QueryGroup.SELECT_GROUP))
 	            {
-	            	System.out.println("select group " + send);
-	            	outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            	if(toExcel)
+	            	{
+	            		String path = chooseFile();
+	            		
+	            		this.sqlConnection.selectAndExportEXCEL(send, path);
+	            		outputBoxText.setText(Records.MSG_EXPORT_COMPLETED + ":" + path);
+	            	}
+	            	else
+	            		outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            	
 	            }
 	            else if(currentRequestGroup.equals(QueryGroup.UPDATE_GROUP))
 	            {
-	            	System.out.println("update group " + send);
-	            	this.update(send);
+	            	if(toExcel)
+	            		outputBoxText.setText(Records.MSG_EXPORT_TO_EXCEL_NOT_SUPPORTED);
+	            	else
+	            		this.update(send);
 	            }
 	            else if(currentRequestGroup.equals(QueryGroup.NOT_AUTORIZED))
 	            {
-	            	String message = "This type of the request not autorized : \n" + send;
+	            	String message = Records.MSG_NOT_AUTORIZED_REQUEST +  "\n" + send;
 	            	Messages.showInfo(message);
 	            }
 	            else if(currentRequestGroup.equals(QueryGroup.CUSTOM_SELECT_GROUP))
 	            {
-	            	send = send.substring(QueryType.SEL.getName().length(), send.length());
-	            	outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            	if(toExcel)
+	            	{
+	            		
+	            	}
+	            	else
+	            	{
+	            		send = send.substring(QueryType.SEL.getName().length(), send.length());
+		            	outputBoxText.setText(outputBoxText.getText() + this.sqlConnection.selectFormatted(send));
+	            	}
 	            }
 	            else if(currentRequestGroup.equals(QueryGroup.CUSTOM_UPDATE_GROUP))
 	            {
-	            	send = send.substring(QueryType.UPD.getName().length(), send.length());
-	            	this.update(send);
+	            	if(toExcel)
+	            		outputBoxText.setText(Records.MSG_EXPORT_TO_EXCEL_NOT_SUPPORTED);
+	            	else
+	            	{
+	            		send = send.substring(QueryType.UPD.getName().length(), send.length());
+		            	this.update(send);
+	            	}
 	            }
 	            else 
 	            {
@@ -449,7 +481,7 @@ public class GUI
         });  
 		
 		tools.getItems().addAll(investigation, queryCollection);
-		
+
 		//--------------------------------------------
 
 		topMenu.getMenus().addAll(connection, edit, tools, about);
@@ -457,6 +489,7 @@ public class GUI
 		return topMenu;
 	}
 
+	
 	private void openAuthorizedQueriesWindow()
 	{
 		Stage settingsWindow = new Stage();
@@ -621,7 +654,15 @@ public class GUI
 		settingsWindow.setScene(scene);
 		settingsWindow.show();
 	}
-	
+	private String chooseFile()
+	{
+		String fileName = "export.xlsx";
+    	FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choose Folder");
+        fileChooser.setInitialFileName(fileName);
+
+        return fileChooser.showSaveDialog(stage).toString();
+	}
 	private void openConnectionSettingsWindwo()
 	{
 		Stage settingsWindow = new Stage();
@@ -733,6 +774,10 @@ public class GUI
 		sentRequest.setGraphic(new ImageView(Records.IMG_SEND_QUERY));
 		sentRequest.setTooltip(new Tooltip(Records.TOOLTIP_SEND_QUERY));
 		
+		sentToExcel = new Button();
+		sentToExcel.setGraphic(new ImageView(Records.IMG_EXPORT_TO_EXCEL));
+		sentToExcel.setTooltip(new Tooltip(Records.TOOLTIP_EXPORT_TO_EXCEL));
+		
 		clear = new Button();
 		clear.setGraphic(new ImageView(Records.IMG_CLEAR_BOXES));
 		clear.setTooltip(new Tooltip(Records.TOOLTIP_CLEAR_BOXES));
@@ -781,7 +826,17 @@ public class GUI
 			@Override
 			public void handle(MouseEvent arg0) 
 			{
-				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean);
+				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean, false);
+			}
+		});
+		
+		sentToExcel.setDisable(true);
+		sentToExcel.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				sendSQLRequest(queueField, outputBoxText, outFieldClean, queueFieldClean, true);
 			}
 		});
 		
@@ -808,7 +863,7 @@ public class GUI
 			}
 		});
 		
-		controlCont.getChildren().addAll(createConnection, closeConnection, sentRequest, addQueryToCollection,
+		controlCont.getChildren().addAll(createConnection, closeConnection, sentRequest, sentToExcel, addQueryToCollection,
 				clear, additionalQueryBox);
 		
 		this.mainPane.setBottom(controlCont);
@@ -846,10 +901,25 @@ public class GUI
 			@Override
 			public void handle(MouseEvent arg0) 
 			{
-				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean);
+				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean, false);
 			}
 		});
+		
+		//-------------------------
 
+		Button sentToExcel = new Button();
+		sentToExcel.setGraphic(new ImageView(Records.IMG_EXPORT_TO_EXCEL));
+		sentToExcel.setTooltip(new Tooltip(Records.TOOLTIP_EXPORT_TO_EXCEL));
+		
+		sentToExcel.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
+		{
+			@Override
+			public void handle(MouseEvent arg0) 
+			{
+				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean, true);
+			}
+		});
+		
 		//-------------------------
 		
 		Button toCollection = new Button();
@@ -902,7 +972,7 @@ public class GUI
 			}
 		});
 		
-		controlsCont.getChildren().addAll(send, toMainBox, toCollection, clear);
+		controlsCont.getChildren().addAll(send, sentToExcel, toMainBox, toCollection, clear);
 		
 		//------------------------------------------------------
 
@@ -962,7 +1032,7 @@ public class GUI
 	            		case ENTER:
 
 	            			if(isConnected)
-	            				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean);
+	            				sendSQLRequest(additionalQueryField, outputBoxText, outFieldClean, queueFieldClean, false);
             				else
             					Messages.showInfo("No connection with database");
             					

@@ -16,9 +16,11 @@
 
 .editSettings
 {
-	-fx-pref-width:300px;
+	-fx-pref-width:340px;
 	-fx-pref-height:120px;
 	-fx-padding:10px;
+	
+	
 }
 
 .editSettings HBox
@@ -39,7 +41,7 @@
 
 .editSettings TextField
 {
-	-fx-pref-width:40px;
+	-fx-pref-width:45px;
 }
 
 .editSettings Button

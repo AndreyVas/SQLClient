@@ -23,7 +23,7 @@ public class Main extends Application
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 
 			con = new SQLConnection();
-			gui = new GUI(scene, root, con);
+			gui = new GUI(primaryStage, root, con);
 
 			primaryStage.setScene(scene);
 			primaryStage.show();

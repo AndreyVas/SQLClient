@@ -11,6 +11,7 @@ public class Records
 	public static String TOOLTIP_MOVE_QUERY_TO_MAIN_BOX = "Move query to main queries window";
 	public static String TOOLTIP_SAVE_QUERY = "Save query";
 	public static String TOOLTIP_DELETE_QUERY = "Delete query";
+	public static String TOOLTIP_EXPORT_TO_EXCEL = "Send query and return result to Excel";
 	
 	public static String IMG_MAIN_ICON = "icon.png";
 	public static String IMG_MSSQL_ICON = "mssqlserver.png";
@@ -24,4 +25,9 @@ public class Records
 	public static String IMG_SEND_QUERY = "send.png";
 	public static String IMG_CREATE_CONNECTION = "connect.png";
 	public static String IMG_CLOSE_CONNECTION = "disconnect.png";
+	public static String IMG_EXPORT_TO_EXCEL = "toExcel.png";
+	
+	public static String MSG_NOT_AUTORIZED_REQUEST = "This type of the request not autorized :";
+	public static String MSG_EXPORT_TO_EXCEL_NOT_SUPPORTED = "Export to Excel for requestst of this type is not supported";
+	public static String MSG_EXPORT_COMPLETED = "The result was saved to a file";
 }

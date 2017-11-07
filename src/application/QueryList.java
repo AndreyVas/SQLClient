@@ -19,6 +19,8 @@ public class QueryList
 		queriesList.add(new QueriesListItem(QueryType.DELETE, false, true));		
 		queriesList.add(new QueriesListItem(QueryType.DROP, false, true));
 		queriesList.add(new QueriesListItem(QueryType.CREATE, false, true));
+		queriesList.add(new QueriesListItem(QueryType.ALTER, false, true));
+		
 		
 		queriesList.add(new QueriesListItem(QueryType.SEL, false, false));
 		queriesList.add(new QueriesListItem(QueryType.UPD, false, false));

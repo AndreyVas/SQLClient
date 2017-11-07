@@ -1,11 +1,18 @@
 package application;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSetMetaData;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class SQLConnection 
 {
@@ -32,7 +39,7 @@ public class SQLConnection
 	{
 		this.url = "localhost";
 		this.user = "root";
-		this.password = "кщще";
+		this.password = "root";
 		
 		this.COLUMN_WIDTH = 20;
 		queryTime = true;
@@ -179,6 +186,10 @@ public class SQLConnection
 		{
 			Messages.showError(e.getMessage());
 		}
+		catch(Exception e)
+		{
+			Messages.showError(e.getMessage());
+		}
 	
 		return null;
 	}
@@ -243,8 +254,67 @@ public class SQLConnection
 		
 		return text;
 	}
+	
+	public void selectAndExportEXCEL(String queue, String path)
+	{
+		// create workbook for export to excel
+		
+		Workbook wb = new XSSFWorkbook();
+		Sheet sheet = wb.createSheet("new sheet");
+		int rowCount = 0;
 
-	int update(String queue)
+		ResultSet rs = select(queue);
+
+		try 
+		{
+			ResultSetMetaData metaData = rs.getMetaData();
+			int count = metaData.getColumnCount();
+
+			// excel row for head info
+			Row headRow = sheet.createRow(rowCount++);
+			
+			for(int i = 1; i <= count; i++)
+			{
+				headRow.createCell(i - 1).setCellValue(metaData.getColumnLabel(i));
+			}
+
+			// main data
+			while (rs.next())
+			{
+				Row row = sheet.createRow(rowCount++);
+				
+				for(int i = 0; i < rs.getMetaData().getColumnCount(); i++)
+				{
+					row.createCell(i).setCellValue(rs.getString(i + 1));
+				}
+			}
+			
+			FileOutputStream fileOut = new FileOutputStream(path);
+			wb.write(fileOut);
+		} 
+		catch (SQLException e) 
+		{
+			e.printStackTrace();
+			Messages.showError(e.getMessage());
+		} 
+		catch (FileNotFoundException e) 
+		{
+			// for FileOutputStream fileOut = new FileOutputStream
+			
+			e.printStackTrace();
+		} 
+		catch (IOException e) 
+		{
+			// for wb.write(fileOut);
+			e.printStackTrace();
+		}
+		catch(Exception e)
+		{
+			Messages.showError(e.getMessage());
+		}
+	}
+
+	public int update(String queue)
 	{
 		try 
 		{

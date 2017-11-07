@@ -12,6 +12,7 @@ public class QueryType
 	public static final QueryType UPDATE	= new QueryType("Update ", QueryGroup.UPDATE_GROUP);
 	public static final QueryType DROP		= new QueryType("Drop ", QueryGroup.UPDATE_GROUP);
 	public static final QueryType CREATE	= new QueryType("Create ", QueryGroup.UPDATE_GROUP);
+	public static final QueryType ALTER		= new QueryType("Alter ", QueryGroup.UPDATE_GROUP);
 
 	public static final QueryType SEL		= new QueryType("Sel ", QueryGroup.CUSTOM_SELECT_GROUP);
 	public static final QueryType UPD	= new QueryType("Upd ", QueryGroup.CUSTOM_UPDATE_GROUP);
